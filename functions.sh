@@ -772,8 +772,6 @@ doInstallation() {
   validateSudo
   setBashas
 
-  dynatracePrintValidateCredentials
-
   enableVerbose
   updateUbuntu
   setupProAliases
@@ -781,40 +779,10 @@ doInstallation() {
   dockerInstall
   microk8sInstall
   microk8sStart
-  microk8sEnableBasic
   microk8sEnableDashboard
   microk8sEnableRegistry
   dynatraceActiveGateInstall
-  istioInstall
-  helmInstall
-  certmanagerInstall
-  resourcesClone
-  keptnExamplesClone
-  dynatraceSaveCredentials
 
-  setupMagicDomainPublicIp
-
-  exposeK8Services
-  patchKubernetesDashboard
-
-  keptnInstall
-  keptnDeployHomepage
-  keptndemoUnleash
-  dynatraceConfigureMonitoring
-  dynatraceConfigureWorkloads
-  keptnBridgeEap
-  keptnBridgeDisableLogin
-  
-  jenkinsDeploy
-
-  gitDeploy
-
-  keptndemoCartsonboard
-  keptndemoDeployCartsloadgenerator
-
-  gitMigrate
-  createWorkshopUser
-  certmanagerEnable
   printInstalltime
 }
 
