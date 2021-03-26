@@ -61,6 +61,24 @@ patch_kubernetes_dashboard=false
 create_workshop_user=false
 
 # ======================================================================
+#             ------- enable Modules K8s    --------                   #
+#  Each bundle has a set of modules (or functions) that will be        #
+#  activated upon installation.                                        #
+# ======================================================================
+enableModulespromk8s() {
+  verbose_mode=true
+  update_ubuntu=true
+  docker_install=true
+  microk8s_install=true
+  setup_proaliases=true
+  enable_registry=true
+  helm_install=true
+  resources_clone=true
+  enable_k8dashboard=true
+  enable_registry=true
+}
+
+# ======================================================================
 #             ------- Installation Bundles  --------                   #
 #  Each bundle has a set of modules (or functions) that will be        #
 #  activated upon installation.                                        #
@@ -505,6 +523,7 @@ doInstallation() {
   validateSudo
   setBashas
 
+  resourcesClone
   enableVerbose
   updateUbuntu
   setupProAliases
