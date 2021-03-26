@@ -1,5 +1,5 @@
 #!/bin/bash
-# This file contains the functions for installing Keptn-in-a-Box.
+# This file contains the functions for installing Prometheus-in-k8s.
 # Each function contains a boolean flag so the installations
 # can be highly customized.
 
@@ -8,21 +8,9 @@
 # ==================================================
 KIAB_RELEASE="release-0.7.3"
 ISTIO_VERSION=1.5.1
-CERTMANAGER_VERSION=0.14.0
-# https://github.com/keptn/keptn
-KEPTN_VERSION=0.7.3
-# https://github.com/keptn-contrib/dynatrace-service
-KEPTN_DT_SERVICE_VERSION=0.10.0
-# https://github.com/keptn-contrib/dynatrace-sli-service
-KEPTN_DT_SLI_SERVICE_VERSION=0.7.0
-# https://github.com/keptn/examples
-KEPTN_EXAMPLES_BRANCH="release-0.7.3"
-TEASER_IMAGE="shinojosa/nginxacm:0.7.3"
-KEPTN_BRIDGE_IMAGE="keptn/bridge2:20200326.0744"
 MICROK8S_CHANNEL="1.18/stable"
-KEPTN_IN_A_BOX_DIR="~/keptn-in-a-box"
-KEPTN_EXAMPLES_DIR="~/examples"
-KEPTN_IN_A_BOX_REPO="https://github.com/keptn-sandbox/keptn-in-a-box.git"
+PROMETHEUS_K8S="~/k8s"
+PROMETHEUS_K8S_REPO="https://github.com/nikhilgoenkatech/k8prometheus.git"
 
 # - The user to run the commands from. Will be overwritten when executing this shell with sudo, this is just needed when spinning machines programatically and running the script with root without an interactive shell
 USER="ubuntu"
@@ -55,9 +43,6 @@ istio_install=false
 helm_install=false
 certmanager_install=false
 certmanager_enable=false
-keptn_install=false
-keptn_install_qualitygates=false
-keptn_examples_clone=false
 resources_clone=false
 
 git_deploy=false
@@ -70,12 +55,6 @@ dynatrace_configure_workloads=false
 
 jenkins_deploy=false
 
-keptn_bridge_eap=false
-keptn_bridge_disable_login=false
-keptndeploy_homepage=false
-keptndemo_cartsload=false
-keptndemo_unleash=false
-keptndemo_cartsonboard=false
 expose_kubernetes_api=false
 expose_kubernetes_dashboard=false
 patch_kubernetes_dashboard=false
@@ -100,8 +79,6 @@ installationBundleDemo() {
   certmanager_install=false
   certmanager_enable=false
 
-  keptn_install=true
-  keptn_examples_clone=true
   resources_clone=true
 
   git_deploy=true
@@ -112,14 +89,9 @@ installationBundleDemo() {
   dynatrace_activegate_install=true
   dynatrace_configure_workloads=true
 
-  keptndeploy_homepage=true
-  keptndemo_cartsload=true
-  keptndemo_unleash=true
-  keptndemo_cartsonboard=true
   expose_kubernetes_api=true
   expose_kubernetes_dashboard=true
   patch_kubernetes_dashboard=true
-  keptn_bridge_disable_login=true
   # By default no WorkshopUser will be created
   create_workshop_user=false
 }
@@ -131,7 +103,6 @@ installationBundleWorkshop() {
   expose_kubernetes_api=true
   expose_kubernetes_dashboard=true
   patch_kubernetes_dashboard=true
-  keptn_bridge_disable_login=true
 
   selected_bundle="installationBundleWorkshop"
 }
@@ -145,7 +116,6 @@ installationBundleAll() {
   certmanager_install=true
   certmanager_enable=true
   create_workshop_user=true
-  keptn_bridge_disable_login=true
 
   jenkins_deploy=true
 
@@ -153,8 +123,6 @@ installationBundleAll() {
 }
 
 installationBundleKeptnOnly() {
-  # The minimal to have a full keptn working
-  # with exposed istio and keptn over nginx
   update_ubuntu=true
   docker_install=true
   microk8s_install=true
@@ -162,9 +130,7 @@ installationBundleKeptnOnly() {
 
   setup_proaliases=true
   istio_install=true
-  keptn_install=true
   helm_install=true
-  keptn_examples_clone=true
   resources_clone=true
 
   dynatrace_savecredentials=true
@@ -173,7 +139,6 @@ installationBundleKeptnOnly() {
   expose_kubernetes_api=true
   expose_kubernetes_dashboard=true
 
-  keptndeploy_homepage=true
 
   selected_bundle="installationBundleKeptnOnly"
 }
@@ -186,7 +151,6 @@ installationBundleKeptnQualityGates() {
   helm_install=false
 
   # For the QualityGates we need both flags needs to be enabled
-  keptn_install_qualitygates=true
 
   selected_bundle="installationBundleKeptnQualityGates"
 }
@@ -223,13 +187,13 @@ timestamp() {
 }
 
 printInfo() {
-  echo "[Keptn-In-A-Box|INFO] $(timestamp) |>->-> $1 <-<-<|"
+  echo "[Prometheus-in-k8s|INFO] $(timestamp) |>->-> $1 <-<-<|"
 }
 
 printInfoSection() {
-  echo "[Keptn-In-A-Box|INFO] $(timestamp) |$thickline"
-  echo "[Keptn-In-A-Box|INFO] $(timestamp) |$halfline $1 $halfline"
-  echo "[Keptn-In-A-Box|INFO] $(timestamp) |$thinline"
+  echo "[Prometheus-in-k8s|INFO] $(timestamp) |$thickline"
+  echo "[Prometheus-in-k8s|INFO] $(timestamp) |$halfline $1 $halfline"
+  echo "[Prometheus-in-k8s|INFO] $(timestamp) |$thinline"
 }
 
 printError() {
@@ -238,10 +202,10 @@ printError() {
 
 validateSudo() {
   if [[ $EUID -ne 0 ]]; then
-    printError "Keptn-in-a-Box must be run with sudo rights. Exiting installation"
+    printError "Prometheus-in-k8s must be run with sudo rights. Exiting installation"
     exit 1
   fi
-  printInfo "Keptn-in-a-Box installing with sudo rights:ok"
+  printInfo "Prometheus-in-k8s installing with sudo rights:ok"
 }
 
 waitForAllPods() {
@@ -288,28 +252,6 @@ updateUbuntu() {
   fi
 }
 
-dynatracePrintValidateCredentials() {
-  printInfoSection "Printing Dynatrace Credentials"
-  if [ -n "${TENANT}" ]; then
-    printInfo "Shuffle the variables for name convention with Keptn & Dynatrace"
-    PROTOCOL="https://"
-    DT_TENANT=${TENANT#"$PROTOCOL"}
-    printInfo "Cleaned tenant=$DT_TENANT"
-    DT_API_TOKEN=$APITOKEN
-    DT_PAAS_TOKEN=$PAASTOKEN
-    printInfo "-------------------------------"
-    printInfo "Dynatrace Tenant: $DT_TENANT"
-    printInfo "Dynatrace API Token: $DT_API_TOKEN"
-    printInfo "Dynatrace PaaS Token: $DT_PAAS_TOKEN"
-  else
-    printInfoSection "Dynatrace Variables not set, Dynatrace wont be installed"
-    dynatrace_savecredentials=false
-    dynatrace_configure_monitoring=false
-    dynatrace_activegate_install=false
-    dynatrace_configure_workloads=false
-  fi
-}
-
 dockerInstall() {
   if [ "$docker_install" = true ]; then
     printInfoSection "Installing Docker and J Query"
@@ -335,20 +277,6 @@ setupProAliases() {
       alias pg='ps -aux | grep' " >/root/.bash_aliases
     homedir=$(eval echo ~$USER)
     cp /root/.bash_aliases $homedir/.bash_aliases
-  fi
-}
-
-setupMagicDomainPublicIp() {
-  printInfoSection "Setting up the Domain"
-  if [ -n "${DOMAIN}" ]; then
-    printInfo "The following domain is defined: $DOMAIN"
-    export DOMAIN
-  else
-    printInfo "No DOMAIN is defined, converting the public IP in a magic nip.io domain"
-    PUBLIC_IP=$(curl -s ifconfig.me)
-    PUBLIC_IP_AS_DOM=$(echo $PUBLIC_IP | sed 's~\.~-~g')
-    export DOMAIN="${PUBLIC_IP_AS_DOM}.nip.io"
-    printInfo "Magic Domain: $DOMAIN"
   fi
 }
 
@@ -382,6 +310,14 @@ microk8sInstall() {
     printInfo "Enable dns for the services to be able to communicate internally"
     bashas "microk8s enable dns"
 
+    printInfo "Build docker image from the docker file"
+    bashas "docker build . -t app"
+
+    printInfo "Save docker image to a tar archive"
+    bashas "docker save app > app.tar" 
+
+    printInfo "Import image to MicroK8s"
+    bashas "microk8s ctr image import app.tar"
   fi
 }
 
@@ -416,17 +352,6 @@ microk8sEnableRegistry() {
   fi
 }
 
-dynatraceActiveGateInstall() {
-  if [ "$dynatrace_activegate_install" = true ]; then
-    printInfoSection "Installation of Active Gate"
-    wget -nv -O activegate.sh "https://$DT_TENANT/api/v1/deployment/installer/gateway/unix/latest?Api-Token=$DT_PAAS_TOKEN&arch=x86&flavor=default"
-    sh activegate.sh
-    printInfo "removing ActiveGate installer."
-    rm activegate.sh
-  fi
-}
-
-#TODO Upgrade to 1.6.2 to pair with the Keptn tests. Add a Gateway as in the keptn docu. 
 # We install  Istio manually since Microk8s 1.18 classic comes with 1.3.4 and 1.5.1 is leightweit
 istioInstall() {
   if [ "$istio_install" = true ]; then
@@ -457,211 +382,49 @@ helmInstall() {
   fi
 }
 
-certmanagerInstall() {
-  if [ "$certmanager_install" = true ]; then
-    printInfoSection "Install CertManager $CERTMANAGER_VERSION with Email Account ($CERTMANAGER_EMAIL)"
-    bashas "kubectl apply -f https://github.com/jetstack/cert-manager/releases/download/v$CERTMANAGER_VERSION/cert-manager.yaml"
-    waitForAllPods
-  fi
-}
-
-certmanagerEnable() {
-  if [ "$certmanager_enable" = true ]; then
-    printInfoSection "Installing ClusterIssuer with HTTP Letsencrypt for ($CERTMANAGER_EMAIL)"
-
-    #bashas "kubectl apply -f $KEPTN_IN_A_BOX_DIR/resources/ingress/clusterissuer.yaml"
-    bashas "cd $KEPTN_IN_A_BOX_DIR/resources/ingress && bash create-clusterissuer.sh $CERTMANAGER_EMAIL"
-    waitForAllPods
-    printInfo "Creating SSL Certificates with Let's encrypt for the exposed ingresses"
-    bashas "cd $KEPTN_IN_A_BOX_DIR/resources/ingress && bash add-ssl-certificates.sh"
-
-    printInfoSection "Let's Encrypt Process in kubectl for CertManager"
-    printInfo " For observing the creation of the certificates: \n
-              kubectl describe clusterissuers.cert-manager.io -A
-              kubectl describe issuers.cert-manager.io -A
-              kubectl describe certificates.cert-manager.io -A
-              kubectl describe certificaterequests.cert-manager.io -A
-              kubectl describe challenges.acme.cert-manager.io -A
-              kubectl describe orders.acme.cert-manager.io -A
-              kubectl get events
-              "
-  fi
-}
-
-keptndemoDeployCartsloadgenerator() {
-  # https://github.com/sergiohinojosa/keptn-in-a-box/resources/cartsloadgenerator
-  if [ "$keptndemo_cartsload" = true ]; then
-    printInfoSection "Deploy Cartsload Generator"
-    bashas "kubectl create deploy cartsloadgen --image=shinojosa/cartsloadgen:keptn"
-  fi
-}
-
 resourcesClone() {
   if [ "$resources_clone" = true ]; then
-    printInfoSection "Clone Keptn-in-a-Box Resources in $KEPTN_IN_A_BOX_DIR"
-    bashas "git clone --branch $KIAB_RELEASE $KEPTN_IN_A_BOX_REPO $KEPTN_IN_A_BOX_DIR --single-branch"
+    printInfoSection "Clone Prometheus-in-k8s Resources in $PROMETHEUS_K8S"
+    bashas "git clone $PROMETHEUS_K8S_REPO $PROMETHEUS_K8S"
   fi
 }
 
-keptnExamplesClone() {
-  if [ "$keptn_examples_clone" = true ]; then
-    printInfoSection "Clone Keptn Exmaples $KEPTN_EXAMPLES_BRANCH"
-    bashas "git clone --branch $KEPTN_EXAMPLES_BRANCH https://github.com/keptn/examples.git $KEPTN_EXAMPLES_DIR --single-branch"
-  fi
-}
-
-dynatraceSaveCredentials() {
-  if [ "$dynatrace_savecredentials" = true ]; then
-    printInfoSection "Save Dynatrace credentials"
-    bashas "cd $KEPTN_IN_A_BOX_DIR/resources/dynatrace/ ; bash save-credentials.sh \"$DT_TENANT\" \"$APITOKEN\" \"$PAASTOKEN\""
-  fi
-}
-
-keptnInstallClient() {
-  printInfoSection "Download Keptn $KEPTN_VERSION"
-  wget -q -O keptn.tar "https://github.com/keptn/keptn/releases/download/${KEPTN_VERSION}/${KEPTN_VERSION}_keptn-linux.tar"
-  tar -xvf keptn.tar
-  chmod +x keptn
-  mv keptn /usr/local/bin/keptn
-  printInfo "Remove keptn.tar"
-  rm keptn.tar
-}
-
-keptnInstall() {
-  if [ "$keptn_install" = true ]; then
-
-    keptnInstallClient
-
-    if [ "$keptn_install_qualitygates" = true ]; then
-      printInfoSection "Install Keptn with Continuous Delivery UseCase (no Istio configurtion)"
-      #TODO Improve with no flag?
-      bashas "echo 'y' | keptn install --use-case=continuous-delivery"
-      waitForAllPods
-    else
-      ## -- Keptn Installation --
-      printInfoSection "Install Keptn with Continuous Delivery UseCase"
-      bashas "echo 'y' | keptn install --use-case=continuous-delivery"
-      waitForAllPods
-      
-      printInfoSection "Configuring Istio for Keptn"
-      bashas "kubectl create configmap -n keptn ingress-config --from-literal=ingress_hostname_suffix=${DOMAIN} --from-literal=ingress_port=80 --from-literal=ingress_protocol=http --from-literal=istio_gateway=ingressgateway.istio-system -oyaml --dry-run | kubectl replace -f -"
-      
-      printInfo "Restart Keptn Helm Service"
-      bashas "kubectl delete pod -n keptn -lapp.kubernetes.io/name=helm-service"
-    fi
-
-    printInfoSection "Routing for the Keptn Services via NGINX Ingress"
-    bashas "cd $KEPTN_IN_A_BOX_DIR/resources/ingress && bash create-ingress.sh ${DOMAIN} api-keptn-ingress"
-    waitForAllPods
-    #We sleep for 5 seconds to give time the Ingress to be ready 
-    sleep 5
-    printInfoSection "Authenticate Keptn CLI"
-    KEPTN_ENDPOINT=https://$(kubectl get ing -n keptn api-keptn-ingress -o=jsonpath='{.spec.tls[0].hosts[0]}')/api
-    KEPTN_API_TOKEN=$(kubectl get secret keptn-api-token -n keptn -ojsonpath={.data.keptn-api-token} | base64 --decode)
-    bashas "keptn auth --endpoint=$KEPTN_ENDPOINT --api-token=$KEPTN_API_TOKEN"
-  fi
-}
-
-keptnDeployHomepage() {
-  if [ "$keptndeploy_homepage" = true ]; then
-    printInfoSection "Deploying the Autonomous Cloud (dynamic) Teaser with Pipeline overview $TEASER_IMAGE"
-    bashas "kubectl -n default create deploy homepage --image=${TEASER_IMAGE}"
-    bashas "kubectl -n default expose deploy homepage --port=80 --type=NodePort"
-    bashas "cd $KEPTN_IN_A_BOX_DIR/resources/ingress && bash create-ingress.sh ${DOMAIN} homepage"
-  fi
-}
 
 jenkinsDeploy() {
   if [ "$jenkins_deploy" = true ]; then
     printInfoSection "Deploying Jenkins via Helm. This Jenkins is configured and managed 'as code'"
-    bashas "cd $KEPTN_IN_A_BOX_DIR/resources/jenkins && bash deploy-jenkins.sh ${DOMAIN}"
-    bashas "cd $KEPTN_IN_A_BOX_DIR/resources/ingress && bash create-ingress.sh ${DOMAIN} jenkins"
+    bashas "cd $PROMETHEUS_K8S/resources/jenkins && bash deploy-jenkins.sh ${DOMAIN}"
+    bashas "cd $PROMETHEUS_K8S/resources/ingress && bash create-ingress.sh ${DOMAIN} jenkins"
   fi
 }
 
 gitDeploy() {
   if [ "$git_deploy" = true ]; then
     printInfoSection "Deploying self-hosted GIT(ea) service via Helm."
-    bashas "cd $KEPTN_IN_A_BOX_DIR/resources/gitea && bash deploy-gitea.sh ${DOMAIN}"
-    bashas "cd $KEPTN_IN_A_BOX_DIR/resources/ingress && bash create-ingress.sh ${DOMAIN} gitea"
+    bashas "cd $PROMETHEUS_K8S/resources/gitea && bash deploy-gitea.sh ${DOMAIN}"
+    bashas "cd $PROMETHEUS_K8S/resources/ingress && bash create-ingress.sh ${DOMAIN} gitea"
   fi
 }
 
 gitMigrate() {
   if [ "$git_migrate" = true ]; then
-    printInfoSection "Migrating Keptn projects to a self-hosted GIT(ea) service."
-    bashas "cd $KEPTN_IN_A_BOX_DIR/resources/gitea && bash update-git-keptn.sh ${DOMAIN}"
-  fi
-}
-
-dynatraceConfigureMonitoring() {
-  if [ "$dynatrace_configure_monitoring" = true ]; then
-    printInfoSection "Installing and configuring Dynatrace OneAgent on the Cluster (via Keptn) for $DT_TENANT"
-    printInfo "Saving Credentials in dynatrace secret in keptn ns"
-
-    # TODO Why store bridge and other keptn infos in the secret??
-    bashas "kubectl -n keptn create secret generic dynatrace --from-literal=\"DT_TENANT=$DT_TENANT\" --from-literal=\"DT_API_TOKEN=$DT_API_TOKEN\"  --from-literal=\"KEPTN_API_URL=http://$(kubectl -n keptn get ingress api-keptn-ingress -ojsonpath={.spec.rules[0].host})/api\" --from-literal=\"KEPTN_API_TOKEN=$(kubectl get secret keptn-api-token -n keptn -ojsonpath={.data.keptn-api-token} | base64 --decode)\" --from-literal=\"KEPTN_BRIDGE_URL=http://$(kubectl -n keptn get ingress api-keptn-ingress -ojsonpath={.spec.rules[0].host})/bridge\""
-    # Deploy Operator as Help pages
-    printInfo "Deploying the OneAgent Operator"
-    bashas "cd $KEPTN_IN_A_BOX_DIR/resources/dynatrace && echo 'y' | bash deploy_operator.sh"
-    printInfo "Deploying the Dynatrace Service in Keptn"
-    bashas "kubectl apply -f https://raw.githubusercontent.com/keptn-contrib/dynatrace-service/$KEPTN_DT_SERVICE_VERSION/deploy/service.yaml -n keptn" 
-
-    printInfo "Setting up Dynatrace SLI provider in Keptn"
-    bashas "kubectl apply -f https://raw.githubusercontent.com/keptn-contrib/dynatrace-sli-service/$KEPTN_DT_SLI_SERVICE_VERSION/deploy/service.yaml -n keptn"
-    
-    waitForAllPods
-    bashas "keptn configure monitoring dynatrace"
-    waitForAllPods
-  fi
-}
-
-keptnBridgeEap() {
-  if [ "$keptn_bridge_eap" = true ]; then
-    printInfoSection "Keptn Bridge update to EAP"
-    bashas "kubectl -n keptn set image deployment/bridge bridge=${KEPTN_BRIDGE_IMAGE} --record"
-  fi
-}
-
-keptnBridgeDisableLogin() {
-  if [ "$keptn_bridge_disable_login" = true ]; then
-    printInfoSection "Keptn Bridge disabling Login"
-    bashas "kubectl -n keptn delete secret bridge-credentials"
-    bashas "kubectl -n keptn delete pods --selector=app.kubernetes.io/name=bridge"
-  fi
-}
-
-
-keptndemoUnleash() {
-  if [ "$keptndemo_unleash" = true ]; then
-    printInfoSection "Deploy Unleash-Server"
-    bashas "cd $KEPTN_EXAMPLES_DIR/unleash-server/ &&  bash $KEPTN_IN_A_BOX_DIR/resources/demo/deploy_unleashserver.sh"
-
-    printInfoSection "Expose Unleash-Server"
-    #TODO Add Unleash Remediation via bash/curl/yaml
-    bashas "cd $KEPTN_IN_A_BOX_DIR/resources/ingress && bash create-ingress.sh ${DOMAIN} unleash"
-  fi
-}
-
-dynatraceConfigureWorkloads() {
-  if [ "$dynatrace_configure_workloads" = true ]; then
-    printInfoSection "Configuring Dynatrace Workloads for the Cluster (via Dynatrace and K8 API)"
-    bashas "cd $KEPTN_IN_A_BOX_DIR/resources/dynatrace && bash configure-workloads.sh"
+    printInfoSection "Migrating Prometheus-in-k8s projects to a self-hosted GIT(ea) service."
+    bashas "cd $PROMETHEUS_K8S/resources/gitea && bash update-git-keptn.sh ${DOMAIN}"
   fi
 }
 
 exposeK8Services() {
   if [ "$expose_kubernetes_api" = true ]; then
     printInfoSection "Exposing the Kubernetes Cluster API"
-    bashas "cd $KEPTN_IN_A_BOX_DIR/resources/ingress && bash create-ingress.sh ${DOMAIN} k8-api"
+    bashas "cd $PROMETHEUS_K8S/resources/ingress && bash create-ingress.sh ${DOMAIN} k8-api"
   fi
   if [ "$expose_kubernetes_dashboard" = true ]; then
     printInfoSection "Exposing the Kubernetes Dashboard"
-    bashas "cd $KEPTN_IN_A_BOX_DIR/resources/ingress && bash create-ingress.sh ${DOMAIN} k8-dashboard"
+    bashas "cd $PROMETHEUS_K8S/resources/ingress && bash create-ingress.sh ${DOMAIN} k8-dashboard"
   fi
   if [ "$istio_install" = true ]; then
     printInfoSection "Exposing Istio Service Mesh as fallBack for nonmapped hosts (subdomains)"
-    bashas "cd $KEPTN_IN_A_BOX_DIR/resources/ingress && bash create-ingress.sh ${DOMAIN} istio-ingress"
+    bashas "cd $PROMETHEUS_K8S/resources/ingress && bash create-ingress.sh ${DOMAIN} istio-ingress"
   fi
 }
 
@@ -669,20 +432,7 @@ patchKubernetesDashboard() {
   if [ "$patch_kubernetes_dashboard" = true ]; then
     printInfoSection "Patching Kubernetes Dashboard, use only for learning and Workshops"
     echo "Skip Login in K8 Dashboard"
-    bashas "cd $KEPTN_IN_A_BOX_DIR/resources/misc && bash patch-kubernetes-dashboard.sh"
-  fi
-}
-
-keptndemoCartsonboard() {
-  if [ "$keptndemo_cartsonboard" = true ]; then
-    printInfoSection "Keptn onboarding Carts"
-    #TODO Parameterize Carts Version.
-    bashas "cd $KEPTN_EXAMPLES_DIR/onboarding-carts/ && bash $KEPTN_IN_A_BOX_DIR/resources/demo/onboard_carts.sh && bash $KEPTN_IN_A_BOX_DIR/resources/demo/onboard_carts_qualitygates.sh"
-    bashas "cd $KEPTN_EXAMPLES_DIR/onboarding-carts/ && bash $KEPTN_IN_A_BOX_DIR/resources/demo/deploy_carts_0.sh"
-
-    printInfoSection "Keptn Exposing the Onboarded Carts Application"
-    bashas "cd $KEPTN_IN_A_BOX_DIR/resources/ingress && bash create-ingress.sh ${DOMAIN} sockshop"
-
+    bashas "cd $PROMETHEUS_K8S/resources/misc && bash patch-kubernetes-dashboard.sh"
   fi
 }
 
@@ -714,30 +464,19 @@ printInstalltime() {
   echo ""
   bashas "kubectl get ing -A"
 
-  if [ "$keptn_bridge_disable_login" = false ]; then
-    printInfoSection "Keptn Bridge Access"
-    bashas "keptn configure bridge --output"
-    echo ""
-  fi
-
-  if [ "$keptndemo_unleash" = true ]; then
-    printInfoSection "Unleash-Server Access"
-    printInfo "Username: keptn"
-    printInfo "Password: keptn"
-  fi
 
   if [ "$jenkins_deploy" = true ]; then
     printInfoSection "Jenkins-Server Access"
-    printInfo "Username: keptn"
-    printInfo "Password: keptn"
+    printInfo "Username: D1PJenkinsUser"
+    printInfo "Password: D1PJenkinsUser"
   fi 
 
   if [ "$git_deploy" = true ]; then
     printInfoSection "Git-Server Access"
-    bashas "bash $KEPTN_IN_A_BOX_DIR/resources/gitea/gitea-vars.sh ${DOMAIN}"
-    printInfo "ApiToken to be found on $KEPTN_IN_A_BOX_DIR/resources/gitea/keptn-token.json"
+    bashas "bash $PROMETHEUS_K8S/resources/gitea/gitea-vars.sh ${DOMAIN}"
+    printInfo "ApiToken to be found on $PROMETHEUS_K8S/resources/gitea/keptn-token.json"
     printInfo "For migrating keptn projects to your self-hosted git repository afterwards just execute the following function:"
-    printInfo "cd $KEPTN_IN_A_BOX_DIR/resources/gitea/ && source ./gitea-functions.sh; createKeptnRepoManually {project-name}"
+    printInfo "cd $PROMETHEUS_K8S/resources/gitea/ && source ./gitea-functions.sh; createKeptnRepoManually {project-name}"
   fi 
 
   if [ "$create_workshop_user" = true ]; then
@@ -748,13 +487,6 @@ printInstalltime() {
   
 }
 
-printFlags() {
-  printInfoSection "Function Flags values"
-  for i in {selected_bundle,verbose_mode,update_ubuntu,docker_install,microk8s_install,setup_proaliases,enable_k8dashboard,enable_registry,istio_install,helm_install,git_deploy,git_migrate,certmanager_install,certmanager_enable,keptn_install,keptn_install_qualitygates,keptn_examples_clone,resources_clone,dynatrace_savecredentials,dynatrace_configure_monitoring,dynatrace_activegate_install,dynatrace_configure_workloads,jenkins_deploy,keptn_bridge_disable_login,keptn_bridge_eap,keptndeploy_homepage,keptndemo_cartsload,keptndemo_unleash,keptndemo_cartsonboard,expose_kubernetes_api,expose_kubernetes_dashboard,patch_kubernetes_dashboard,create_workshop_user}; 
-  do 
-    echo "$i = ${!i}"
-  done
-}
 
 # ======================================================================
 #            ---- The Installation function -----                      #
@@ -769,8 +501,6 @@ doInstallation() {
   # Record time of installation
   SECONDS=0
 
-  printFlags
-  
   echo ""
   validateSudo
   setBashas
@@ -790,4 +520,4 @@ doInstallation() {
 }
 
 # When the functions are loaded in the Keptn-in-a-box Shell this message will be printed out.
-printInfo "Keptn-in-a-Box installation functions loaded in the current shell"
+printInfo "Prometheus-in-k8s installation functions loaded in the current shell"
