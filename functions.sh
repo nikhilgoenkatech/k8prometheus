@@ -329,7 +329,7 @@ microk8sInstall() {
     bashas "microk8s enable dns"
 
     printInfo "Build docker image from the docker file"
-    bashas "docker build -t app -f $PROMETHEUS_K8S/Dockerfile ."
+    bashas "sudo docker build -t app -f $PROMETHEUS_K8S/Dockerfile ."
 
     printInfo "Save docker image to a tar archive"
     bashas "docker save app > app.tar" 
