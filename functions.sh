@@ -519,7 +519,7 @@ doInstallation() {
   echo ""
   # Record time of installation
   SECONDS=0
-
+  
   echo ""
   validateSudo
   setBashas
@@ -528,7 +528,8 @@ doInstallation() {
   enableVerbose
   updateUbuntu
   setupProAliases
-
+  
+  createWorkshopUser
   dockerInstall
   microk8sInstall
   microk8sStart
