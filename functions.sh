@@ -58,7 +58,7 @@ jenkins_deploy=false
 expose_kubernetes_api=false
 expose_kubernetes_dashboard=false
 patch_kubernetes_dashboard=false
-create_workshop_user=false
+create_workshop_user=true
 
 # ======================================================================
 #             ------- enable Modules K8s    --------                   #
@@ -328,6 +328,7 @@ microk8sInstall() {
     printInfo "Enable dns for the services to be able to communicate internally"
     bashas "microk8s enable dns"
 
+    bashas "cd $PROMETHEUS_K8S/"
     printInfo "Build docker image from the docker file"
     bashas "docker build . -t app"
 
