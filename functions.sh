@@ -1,5 +1,5 @@
 #!/bin/bash
-# This file contains the functions for installing Prometheus-in-k8s.
+# This file contains the functions for installing Kubernetes for D1P STEP Program.
 # Each function contains a boolean flag so the installations
 # can be highly customized.
 
@@ -11,6 +11,9 @@ ISTIO_VERSION=1.5.1
 MICROK8S_CHANNEL="1.18/stable"
 PROMETHEUS_K8S="~/k8s"
 PROMETHEUS_K8S_REPO="https://github.com/nikhilgoenkatech/k8prometheus.git"
+RETAIL_APP_DIR="~/e-commerce"
+RETAIL_APP_REPO="https://github.com/nikhilgoenkatech/retailapp.git"
+
 
 # - The user to run the commands from. Will be overwritten when executing this shell with sudo, this is just needed when spinning machines programatically and running the script with root without an interactive shell
 USER="ubuntu"
@@ -404,6 +407,9 @@ resourcesClone() {
   if [ "$resources_clone" = true ]; then
     printInfoSection "Clone Prometheus-in-k8s Resources in $PROMETHEUS_K8S"
     bashas "git clone $PROMETHEUS_K8S_REPO $PROMETHEUS_K8S"
+    
+    printInfoSection "Clone Retail Application Resources in $RETAIL_APP_DIR"
+    bashas "git clone $RETAIL_APP_REPO $RETAIL_APP_DIR"    
   fi
 }
 
