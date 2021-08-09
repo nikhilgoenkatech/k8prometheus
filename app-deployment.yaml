@@ -25,7 +25,7 @@ spec:
     spec:
       containers:
         - name: sample-bank
-          image: nikhilgoenka/samplebankprometheus:latest
+          image: nikhilgoenka/samplebank-nginx:blue
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 3000
