@@ -45,4 +45,4 @@ spec:
         - backend:
             serviceName: deployment-green
             servicePort: 3000
-          path: /samplebank(/|$)(.*)
+          path: /samplebank-green(/|$)(.*)
