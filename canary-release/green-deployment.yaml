@@ -34,7 +34,7 @@ spec:
    spec:
      containers:
      - name: frontend
-       image: nikhilgoenka/sample-bank:green
+       image: nikhilgoenka/samplebank-nginx:green
        imagePullPolicy: IfNotPresent
        ports:
        - containerPort: 3000
