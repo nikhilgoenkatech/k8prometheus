@@ -343,8 +343,8 @@ microk8sInstall() {
     bashas "microk8s ctr image import app.tar"
     
     printInfo "Update Cluster IP"
-    bashas "export CLUSTER_SERVER=$(microk8s config | grep "server:" | sed 's/^.*server: //')"
-    bashas "kubectl config set-cluster microk8s-cluster --insecure-skip-tls-verify=true --server="$CLUSTER_SERVER"
+    bashas "export CLUSTER_SERVER=$(microk8s config | grep \"server:\" | sed 's/^.*server: //')"
+    bashas "kubectl config set-cluster microk8s-cluster --insecure-skip-tls-verify=true --server=\"$CLUSTER_SERVER\""
             
   fi
 }
