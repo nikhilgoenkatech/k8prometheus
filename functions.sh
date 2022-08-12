@@ -13,6 +13,8 @@ PROMETHEUS_K8S="~/k8s"
 PROMETHEUS_K8S_REPO="https://github.com/nikhilgoenkatech/k8prometheus.git"
 RETAIL_APP_DIR="~/e-commerce"
 RETAIL_APP_REPO="https://github.com/nikhilgoenkatech/retailapp.git"
+BANKAPP_REPO="https://github.com/nikhilgoenkatech/Bank-Sample-app.git"
+BANKAPP_DIR="~/Bank-Sample-app"
 
 
 # - The user to run the commands from. Will be overwritten when executing this shell with sudo, this is just needed when spinning machines programatically and running the script with root without an interactive shell
@@ -339,6 +341,7 @@ microk8sInstall() {
 
     printInfo "Import image to MicroK8s"
     bashas "microk8s ctr image import app.tar"
+        
   fi
 }
 
@@ -410,6 +413,9 @@ resourcesClone() {
     
     printInfoSection "Clone Retail Application Resources in $RETAIL_APP_DIR"
     bashas "git clone $RETAIL_APP_REPO $RETAIL_APP_DIR"    
+    
+    printInfoSection "Clone BANKAPP_REPO Resources in $BANKAPP_DIR"
+    bashas "sudo git clone $BANKAPP_REPO $BANKAPP_DIR"    
   fi
 }
 
