@@ -341,7 +341,11 @@ microk8sInstall() {
 
     printInfo "Import image to MicroK8s"
     bashas "microk8s ctr image import app.tar"
-        
+    
+    printInfo "Update Cluster IP"
+    bashas "export CLUSTER_SERVER=$(microk8s config | grep "server:" | sed 's/^.*server: //')"
+    bashas "kubectl config set-cluster microk8s-cluster --insecure-skip-tls-verify=true --server="$CLUSTER_SERVER"
+            
   fi
 }
 
@@ -480,6 +484,10 @@ createWorkshopUser() {
     usermod -a -G microk8s $NEWUSER
     printInfo "Warning: allowing SSH passwordAuthentication into the sshd_config"
     sed -i 's/PasswordAuthentication no/PasswordAuthentication yes/g' /etc/ssh/sshd_config
+    sed -i 's/#ClientAliveInterval 0/ClientAliveInterval 20/g' /etc/ssh/sshd_config
+    sed -i 's/#ClientAliveCountMax 0/ClientAliveCountMax 3/g' /etc/ssh/sshd_config
+
+    
     service sshd restart
   fi
 }
