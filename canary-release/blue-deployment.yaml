@@ -9,10 +9,9 @@ spec:
  selector:
    run: blue
  ports:
-   - protocol: TCP
+   - name: "3000"
      port: 3000
-     targetPort: 3000
-     name: http
+     nodePort: 30006
  type: NodePort
  #type: LoadBalancer
 
@@ -26,6 +25,7 @@ spec:
  selector:
    matchLabels:
      run: blue
+     stage: staging
  template:
    metadata:
      labels:
