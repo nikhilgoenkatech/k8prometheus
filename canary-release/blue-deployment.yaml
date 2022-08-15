@@ -31,6 +31,10 @@ spec:
        run: blue
        stage: staging       
        app.kubernetes.io/version: "blue"
+       app.kubernetes.io/name: "sampleBankApp"
+       app.kubernetes.io/component: "frontend"
+       app.kubernetes.io/part-of: "banking_application"
+       
    spec:
      containers:
      - name: frontend
