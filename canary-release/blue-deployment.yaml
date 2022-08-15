@@ -25,11 +25,11 @@ spec:
  selector:
    matchLabels:
      run: blue
-     stage: staging
  template:
    metadata:
      labels:
        run: blue
+       stage: staging       
        app.kubernetes.io/version: "blue"
    spec:
      containers:
