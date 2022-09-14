@@ -1,0 +1,61 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: pod-runtime-injection 
+  annotations:
+    kompose.cmd: compose convert
+    kompose.version: 1.22.0 (955b78124)
+  creationTimestamp: null
+  labels:
+    io.kompose.service: app
+  name: app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      io.kompose.service: app
+  strategy: {}
+  template:
+    metadata:
+      annotations:
+        kompose.cmd: compose convert
+        kompose.version: 1.22.0 (955b78124)
+      creationTimestamp: null
+      labels:
+        io.kompose.service: app
+    spec:
+      containers:
+        - name: sample-bank
+          image: nikhilgoenka/samplebank-nginx:blue
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 3000
+          resources: {}
+          env:
+          - name: LD_PRELOAD
+            value: /opt/dynatrace/oneagent/agent/lib64/liboneagentproc.so
+          - name: DT_NETWORK_ZONE
+            value: <your_network_zone>
+          volumeMounts:
+          - mountPath: /opt/dynatrace/oneagent
+            name: oneagent
+
+# initcontainer to download OneAgent
+      initContainers:
+      - name: install-oneagent
+        image: alpine:latest
+        command:
+        - /bin/sh
+        args:
+        - -c
+        - ARCHIVE=$(mktemp) && wget -O /tmp/oneagent.zip "$DT_API_URL/v1/deployment/installer/agent/unix/paas/latest?Api-Token=$DT_PAAS_TOKEN&$DT_ONEAGENT_OPTIONS" && unzip -o -d /opt/dynatrace/oneagent $ARCHIVE && rm -f /tmp/oneagent.zip
+        volumeMounts:
+        - mountPath: /opt/dynatrace/oneagent
+          name: oneagent
+
+      restartPolicy: Always
+
+      volumes:
+      - name: oneagent
+        emptyDir: {}
+status: {}
